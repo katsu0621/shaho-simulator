@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { MonthInput, OvertimeMode } from "../lib/calc";
 import NumericInput from "./NumericInput";
 
@@ -11,16 +12,17 @@ interface MonthlyInputProps {
   overtimePay: { april: number; may: number; june: number };
   monthlyTotals: { april: number; may: number; june: number };
   overtimeMode: OvertimeMode;
+  onCopyApril: () => void;
 }
 
 const fmt = (n: number) => new Intl.NumberFormat("ja-JP").format(n);
 
 type MonthKey = "april" | "may" | "june";
-type EditableField = "baseSalary" | "overtimeHours" | "commute" | "otherAllowance";
 
 export default function MonthlyInput(props: MonthlyInputProps) {
-  const { april, may, june, setApril, setMay, setJune, overtimePay, monthlyTotals, overtimeMode } = props;
+  const { april, may, june, setApril, setMay, setJune, overtimePay, monthlyTotals, overtimeMode, onCopyApril } = props;
   const isWorkedMonth = overtimeMode === "働いた月の単価";
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const months: { key: MonthKey; label: string; data: MonthInput; set: (v: MonthInput) => void }[] = [
     { key: "april", label: "4月", data: april, set: setApril },
@@ -28,16 +30,14 @@ export default function MonthlyInput(props: MonthlyInputProps) {
     { key: "june",  label: "6月", data: june,  set: setJune },
   ];
 
-  const handleChange = (month: { data: MonthInput; set: (v: MonthInput) => void }, field: EditableField, value: number) => {
-    month.set({ ...month.data, [field]: value });
-  };
-
   const inputClass = "w-full rounded border border-gray-300 px-2 py-1 text-right focus:ring-2 focus:ring-blue-500 focus:outline-none";
   const disabledClass = "w-full rounded border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed px-2 py-1 text-right";
 
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-semibold border-b pb-2">月別給与入力（4・5・6月）</h2>
+      <div className="flex items-center justify-between border-b pb-2">
+        <h2 className="text-lg font-semibold">月別給与入力（4・5・6月）</h2>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse min-w-[480px]">
@@ -50,7 +50,7 @@ export default function MonthlyInput(props: MonthlyInputProps) {
             </tr>
           </thead>
           <tbody>
-            {/* 基本給 */}
+            {/* 基本給 + 一括反映ボタン */}
             <tr>
               <td className="px-3 py-2 border border-gray-200 font-medium">
                 基本給<span className="text-xs text-gray-400 ml-1">(円)</span>
@@ -60,14 +60,25 @@ export default function MonthlyInput(props: MonthlyInputProps) {
                   <NumericInput
                     value={m.data.baseSalary}
                     min={0}
-                    onChange={(v) => handleChange(m, "baseSalary", v)}
+                    onChange={(v) => m.set({ ...m.data, baseSalary: v })}
                     className={inputClass}
                   />
                 </td>
               ))}
             </tr>
+            <tr>
+              <td colSpan={4} className="px-3 py-1 border border-gray-200">
+                <button
+                  type="button"
+                  onClick={onCopyApril}
+                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  4月の基本給を5・6月にも反映
+                </button>
+              </td>
+            </tr>
 
-            {/* 残業時間（働いた月の単価モード時、6月はグレーアウト） */}
+            {/* 通常残業時間 */}
             <tr>
               <td className="px-3 py-2 border border-gray-200 font-medium">
                 残業時間<span className="text-xs text-gray-400 ml-1">(時間)</span>
@@ -81,13 +92,75 @@ export default function MonthlyInput(props: MonthlyInputProps) {
                       step={0.25}
                       min={0}
                       disabled={disabled}
-                      onChange={(v) => handleChange(m, "overtimeHours", v)}
+                      onChange={(v) => m.set({ ...m.data, overtimeHours: v })}
                       className={disabled ? disabledClass : inputClass}
                     />
                   </td>
                 );
               })}
             </tr>
+
+            {/* 詳細入力トグル */}
+            <tr>
+              <td colSpan={4} className="px-3 py-1 border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setDetailOpen(!detailOpen)}
+                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                  <span className={`transition-transform ${detailOpen ? "rotate-90" : ""}`}>▶</span>
+                  残業詳細入力（休日出勤・深夜残業）
+                </button>
+              </td>
+            </tr>
+
+            {/* 詳細入力: 休日出勤 */}
+            {detailOpen && (
+              <>
+                <tr className="bg-orange-50/50">
+                  <td className="px-3 py-2 border border-gray-200 font-medium text-orange-700">
+                    休日出勤<span className="text-xs text-gray-400 ml-1">(時間・×1.35)</span>
+                  </td>
+                  {months.map((m) => {
+                    const disabled = isWorkedMonth && m.key === "june";
+                    return (
+                      <td key={m.key} className="px-2 py-1.5 border border-gray-200">
+                        <NumericInput
+                          value={m.data.holidayHours}
+                          step={0.25}
+                          min={0}
+                          disabled={disabled}
+                          onChange={(v) => m.set({ ...m.data, holidayHours: v })}
+                          className={disabled ? disabledClass : inputClass}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* 詳細入力: 深夜残業 */}
+                <tr className="bg-purple-50/50">
+                  <td className="px-3 py-2 border border-gray-200 font-medium text-purple-700">
+                    深夜残業<span className="text-xs text-gray-400 ml-1">(時間・×1.5)</span>
+                  </td>
+                  {months.map((m) => {
+                    const disabled = isWorkedMonth && m.key === "june";
+                    return (
+                      <td key={m.key} className="px-2 py-1.5 border border-gray-200">
+                        <NumericInput
+                          value={m.data.lateNightHours}
+                          step={0.25}
+                          min={0}
+                          disabled={disabled}
+                          onChange={(v) => m.set({ ...m.data, lateNightHours: v })}
+                          className={disabled ? disabledClass : inputClass}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              </>
+            )}
 
             {/* 読み取り専用行: 残業代 */}
             <tr className="bg-gray-50">
@@ -111,7 +184,7 @@ export default function MonthlyInput(props: MonthlyInputProps) {
                   <NumericInput
                     value={m.data.commute}
                     min={0}
-                    onChange={(v) => handleChange(m, "commute", v)}
+                    onChange={(v) => m.set({ ...m.data, commute: v })}
                     className={inputClass}
                   />
                 </td>
@@ -128,7 +201,7 @@ export default function MonthlyInput(props: MonthlyInputProps) {
                   <NumericInput
                     value={m.data.otherAllowance}
                     min={0}
-                    onChange={(v) => handleChange(m, "otherAllowance", v)}
+                    onChange={(v) => m.set({ ...m.data, otherAllowance: v })}
                     className={inputClass}
                   />
                 </td>

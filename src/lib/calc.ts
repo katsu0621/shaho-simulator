@@ -5,10 +5,23 @@ export type OvertimeMode = "支払月の単価" | "働いた月の単価";
 
 export interface MonthInput {
   baseSalary: number;       // 基本給（円）
-  overtimeHours: number;    // 残業時間（時間）
+  overtimeHours: number;    // 通常残業時間（時間）
+  holidayHours: number;     // 休日出勤時間（時間）
+  lateNightHours: number;   // 深夜残業時間（時間）
   commute: number;          // 通勤手当（円・課税非課税問わず社保算定対象）
   otherAllowance: number;   // その他手当（円）
 }
+
+// 3月分の残業詳細（働いた月の単価モード用）
+export interface MarchOvertime {
+  overtimeHours: number;
+  holidayHours: number;
+  lateNightHours: number;
+}
+
+// 休日出勤・深夜残業の割増率（固定）
+export const HOLIDAY_MULTIPLIER = 1.35;
+export const LATE_NIGHT_MULTIPLIER = 1.5;
 
 export interface SimulationInput {
   prefectureName: string;
@@ -17,7 +30,7 @@ export interface SimulationInput {
   overtimeMultiplier: number;      // 残業割増率（例: 1.25）
   overtimeMode: OvertimeMode;
   marchBase: number;               // 3月の基本給（働いた月の単価モード用）
-  marchOvertimeHours: number;      // 3月の残業時間（働いた月の単価モード用）
+  marchOvertime: MarchOvertime;    // 3月の残業詳細（働いた月の単価モード用）
   april: MonthInput;
   may: MonthInput;
   june: MonthInput;
@@ -100,7 +113,7 @@ export function simulate(input: SimulationInput): SimulationResult {
     overtimeMultiplier,
     overtimeMode,
     marchBase,
-    marchOvertimeHours,
+    marchOvertime,
     april,
     may,
     june,
@@ -108,20 +121,27 @@ export function simulate(input: SimulationInput): SimulationResult {
 
   // 残業代計算（モード別に単価の元となる基本給と残業時間を切替）
   // 働いた月の単価モード: 基本給・残業時間ともに前月のものを使う
-  //   4月支給分 = 3月の基本給 × 3月の残業時間
-  //   5月支給分 = 4月の基本給 × 4月の残業時間
-  //   6月支給分 = 5月の基本給 × 5月の残業時間
   const isWorkedMonth = overtimeMode === "働いた月の単価";
-  const aprilBaseForRate = isWorkedMonth ? marchBase       : april.baseSalary;
-  const mayBaseForRate   = isWorkedMonth ? april.baseSalary : may.baseSalary;
-  const juneBaseForRate  = isWorkedMonth ? may.baseSalary   : june.baseSalary;
-  const aprilHours = isWorkedMonth ? marchOvertimeHours  : april.overtimeHours;
-  const mayHours   = isWorkedMonth ? april.overtimeHours : may.overtimeHours;
-  const juneHours  = isWorkedMonth ? may.overtimeHours   : june.overtimeHours;
 
-  const aprOT = calcOvertimePay(aprilBaseForRate, scheduledHours, aprilHours, overtimeMultiplier);
-  const mayOT = calcOvertimePay(mayBaseForRate,   scheduledHours, mayHours,   overtimeMultiplier);
-  const junOT = calcOvertimePay(juneBaseForRate,  scheduledHours, juneHours,  overtimeMultiplier);
+  // 各月の計算元（基本給・残業時間3種類）を決定
+  const aprilBase = isWorkedMonth ? marchBase        : april.baseSalary;
+  const mayBase   = isWorkedMonth ? april.baseSalary : may.baseSalary;
+  const juneBase  = isWorkedMonth ? may.baseSalary   : june.baseSalary;
+
+  const aprilSrc = isWorkedMonth ? marchOvertime : april;
+  const maySrc   = isWorkedMonth ? april         : may;
+  const juneSrc  = isWorkedMonth ? may           : june;
+
+  // 各月の残業代 = 通常残業 + 休日出勤 + 深夜残業
+  const calcMonthOT = (base: number, src: { overtimeHours: number; holidayHours: number; lateNightHours: number }) => {
+    return calcOvertimePay(base, scheduledHours, src.overtimeHours, overtimeMultiplier)
+      + calcOvertimePay(base, scheduledHours, src.holidayHours, HOLIDAY_MULTIPLIER)
+      + calcOvertimePay(base, scheduledHours, src.lateNightHours, LATE_NIGHT_MULTIPLIER);
+  };
+
+  const aprOT = calcMonthOT(aprilBase, aprilSrc);
+  const mayOT = calcMonthOT(mayBase, maySrc);
+  const junOT = calcMonthOT(juneBase, juneSrc);
 
   // 月額合計
   const aprTotal = calcMonthTotal(april, aprOT);

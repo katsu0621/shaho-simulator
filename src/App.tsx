@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { simulate } from "./lib/calc";
-import type { MonthInput, OvertimeMode } from "./lib/calc";
+import type { MonthInput, OvertimeMode, MarchOvertime } from "./lib/calc";
 import BasicInfo from "./components/BasicInfo";
 import MonthlyInput from "./components/MonthlyInput";
 import ResultPanel from "./components/ResultPanel";
@@ -8,8 +8,16 @@ import ResultPanel from "./components/ResultPanel";
 const defaultMonth: MonthInput = {
   baseSalary: 250000,
   overtimeHours: 0,
+  holidayHours: 0,
+  lateNightHours: 0,
   commute: 0,
   otherAllowance: 0,
+};
+
+const defaultMarchOvertime: MarchOvertime = {
+  overtimeHours: 0,
+  holidayHours: 0,
+  lateNightHours: 0,
 };
 
 export default function App() {
@@ -19,7 +27,7 @@ export default function App() {
   const [overtimeMultiplier, setOvertimeMultiplier] = useState(1.25);
   const [overtimeMode, setOvertimeMode] = useState<OvertimeMode>("働いた月の単価");
   const [marchBase, setMarchBase] = useState(250000);
-  const [marchOvertimeHours, setMarchOvertimeHours] = useState(0);
+  const [marchOvertime, setMarchOvertime] = useState<MarchOvertime>({ ...defaultMarchOvertime });
   const [april, setApril] = useState<MonthInput>({ ...defaultMonth });
   const [may, setMay] = useState<MonthInput>({ ...defaultMonth });
   const [june, setJune] = useState<MonthInput>({ ...defaultMonth });
@@ -33,13 +41,18 @@ export default function App() {
         overtimeMultiplier,
         overtimeMode,
         marchBase,
-        marchOvertimeHours,
+        marchOvertime,
         april,
         may,
         june,
       }),
-    [prefectureName, hasCareInsurance, scheduledHours, overtimeMultiplier, overtimeMode, marchBase, marchOvertimeHours, april, may, june]
+    [prefectureName, hasCareInsurance, scheduledHours, overtimeMultiplier, overtimeMode, marchBase, marchOvertime, april, may, june]
   );
+
+  const copyAprilToMayJune = () => {
+    setMay((prev) => ({ ...prev, baseSalary: april.baseSalary }));
+    setJune((prev) => ({ ...prev, baseSalary: april.baseSalary }));
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
@@ -63,8 +76,8 @@ export default function App() {
         setOvertimeMode={setOvertimeMode}
         marchBase={marchBase}
         setMarchBase={setMarchBase}
-        marchOvertimeHours={marchOvertimeHours}
-        setMarchOvertimeHours={setMarchOvertimeHours}
+        marchOvertime={marchOvertime}
+        setMarchOvertime={setMarchOvertime}
       />
 
       <MonthlyInput
@@ -77,6 +90,7 @@ export default function App() {
         overtimePay={result.overtimePay}
         monthlyTotals={result.monthlyTotals}
         overtimeMode={overtimeMode}
+        onCopyApril={copyAprilToMayJune}
       />
 
       <ResultPanel result={result} hasCareInsurance={hasCareInsurance} />

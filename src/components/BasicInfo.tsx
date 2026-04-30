@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { PREFECTURES } from "../data/prefectures";
-import type { OvertimeMode } from "../lib/calc";
+import type { OvertimeMode, MarchOvertime } from "../lib/calc";
 import NumericInput from "./NumericInput";
 
 interface BasicInfoProps {
@@ -15,8 +16,8 @@ interface BasicInfoProps {
   setOvertimeMode: (v: OvertimeMode) => void;
   marchBase: number;
   setMarchBase: (v: number) => void;
-  marchOvertimeHours: number;
-  setMarchOvertimeHours: (v: number) => void;
+  marchOvertime: MarchOvertime;
+  setMarchOvertime: (v: MarchOvertime) => void;
 }
 
 export default function BasicInfo(props: BasicInfoProps) {
@@ -27,8 +28,10 @@ export default function BasicInfo(props: BasicInfoProps) {
     overtimeMultiplier, setOvertimeMultiplier,
     overtimeMode, setOvertimeMode,
     marchBase, setMarchBase,
-    marchOvertimeHours, setMarchOvertimeHours,
+    marchOvertime, setMarchOvertime,
   } = props;
+
+  const [marchDetailOpen, setMarchDetailOpen] = useState(false);
 
   return (
     <section className="space-y-4">
@@ -124,13 +127,51 @@ export default function BasicInfo(props: BasicInfoProps) {
             <label className="text-sm font-medium">3月の残業時間</label>
             <div className="flex items-center gap-2">
               <NumericInput
-                value={marchOvertimeHours}
+                value={marchOvertime.overtimeHours}
                 step={0.25}
                 min={0}
-                onChange={setMarchOvertimeHours}
+                onChange={(v) => setMarchOvertime({ ...marchOvertime, overtimeHours: v })}
                 className="w-32 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <span className="text-sm text-gray-600">時間</span>
+            </div>
+
+            {/* 3月の詳細残業入力 */}
+            <div className="col-span-2">
+              <button
+                type="button"
+                onClick={() => setMarchDetailOpen(!marchDetailOpen)}
+                className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <span className={`transition-transform ${marchDetailOpen ? "rotate-90" : ""}`}>▶</span>
+                3月の残業詳細入力
+              </button>
+              {marchDetailOpen && (
+                <div className="mt-2 ml-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 items-center">
+                  <label className="text-xs text-gray-600">休日出勤（×1.35）</label>
+                  <div className="flex items-center gap-2">
+                    <NumericInput
+                      value={marchOvertime.holidayHours}
+                      step={0.25}
+                      min={0}
+                      onChange={(v) => setMarchOvertime({ ...marchOvertime, holidayHours: v })}
+                      className="w-24 rounded border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                    <span className="text-xs text-gray-500">時間</span>
+                  </div>
+                  <label className="text-xs text-gray-600">深夜残業（×1.5）</label>
+                  <div className="flex items-center gap-2">
+                    <NumericInput
+                      value={marchOvertime.lateNightHours}
+                      step={0.25}
+                      min={0}
+                      onChange={(v) => setMarchOvertime({ ...marchOvertime, lateNightHours: v })}
+                      className="w-24 rounded border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                    <span className="text-xs text-gray-500">時間</span>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
