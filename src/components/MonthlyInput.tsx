@@ -1,4 +1,5 @@
 import type { MonthInput, OvertimeMode } from "../lib/calc";
+import NumericInput from "./NumericInput";
 
 interface MonthlyInputProps {
   april: MonthInput;
@@ -31,9 +32,8 @@ export default function MonthlyInput(props: MonthlyInputProps) {
     month.set({ ...month.data, [field]: value });
   };
 
-  const rows: { label: string; field: EditableField; unit: string; step?: number }[] = [
-    { label: "基本給", field: "baseSalary", unit: "円" },
-  ];
+  const inputClass = "w-full rounded border border-gray-300 px-2 py-1 text-right focus:ring-2 focus:ring-blue-500 focus:outline-none";
+  const disabledClass = "w-full rounded border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed px-2 py-1 text-right";
 
   return (
     <section className="space-y-4">
@@ -50,27 +50,22 @@ export default function MonthlyInput(props: MonthlyInputProps) {
             </tr>
           </thead>
           <tbody>
-            {/* 編集可能行: 基本給・残業時間 */}
-            {rows.map((row) => (
-              <tr key={row.field}>
-                <td className="px-3 py-2 border border-gray-200 font-medium">
-                  {row.label}
-                  <span className="text-xs text-gray-400 ml-1">({row.unit})</span>
+            {/* 基本給 */}
+            <tr>
+              <td className="px-3 py-2 border border-gray-200 font-medium">
+                基本給<span className="text-xs text-gray-400 ml-1">(円)</span>
+              </td>
+              {months.map((m) => (
+                <td key={m.key} className="px-2 py-1.5 border border-gray-200">
+                  <NumericInput
+                    value={m.data.baseSalary}
+                    min={0}
+                    onChange={(v) => handleChange(m, "baseSalary", v)}
+                    className={inputClass}
+                  />
                 </td>
-                {months.map((m) => (
-                  <td key={m.key} className="px-2 py-1.5 border border-gray-200">
-                    <input
-                      type="number"
-                      value={m.data[row.field]}
-                      step={row.step}
-                      min={0}
-                      onChange={(e) => handleChange(m, row.field, Number(e.target.value))}
-                      className="w-full rounded border border-gray-300 px-2 py-1 text-right focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
+              ))}
+            </tr>
 
             {/* 残業時間（働いた月の単価モード時、6月はグレーアウト） */}
             <tr>
@@ -81,18 +76,13 @@ export default function MonthlyInput(props: MonthlyInputProps) {
                 const disabled = isWorkedMonth && m.key === "june";
                 return (
                   <td key={m.key} className="px-2 py-1.5 border border-gray-200">
-                    <input
-                      type="number"
+                    <NumericInput
                       value={m.data.overtimeHours}
                       step={0.25}
                       min={0}
                       disabled={disabled}
-                      onChange={(e) => handleChange(m, "overtimeHours", Number(e.target.value))}
-                      className={`w-full rounded border px-2 py-1 text-right focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                        disabled
-                          ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "border-gray-300"
-                      }`}
+                      onChange={(v) => handleChange(m, "overtimeHours", v)}
+                      className={disabled ? disabledClass : inputClass}
                     />
                   </td>
                 );
@@ -111,29 +101,39 @@ export default function MonthlyInput(props: MonthlyInputProps) {
               ))}
             </tr>
 
-            {/* 編集可能行: 通勤手当・その他手当 */}
-            {([
-              { label: "通勤手当", field: "commute" as EditableField, unit: "円" },
-              { label: "その他手当", field: "otherAllowance" as EditableField, unit: "円" },
-            ]).map((row) => (
-              <tr key={row.field}>
-                <td className="px-3 py-2 border border-gray-200 font-medium">
-                  {row.label}
-                  <span className="text-xs text-gray-400 ml-1">({row.unit})</span>
+            {/* 通勤手当 */}
+            <tr>
+              <td className="px-3 py-2 border border-gray-200 font-medium">
+                通勤手当<span className="text-xs text-gray-400 ml-1">(円)</span>
+              </td>
+              {months.map((m) => (
+                <td key={m.key} className="px-2 py-1.5 border border-gray-200">
+                  <NumericInput
+                    value={m.data.commute}
+                    min={0}
+                    onChange={(v) => handleChange(m, "commute", v)}
+                    className={inputClass}
+                  />
                 </td>
-                {months.map((m) => (
-                  <td key={m.key} className="px-2 py-1.5 border border-gray-200">
-                    <input
-                      type="number"
-                      value={m.data[row.field]}
-                      min={0}
-                      onChange={(e) => handleChange(m, row.field, Number(e.target.value))}
-                      className="w-full rounded border border-gray-300 px-2 py-1 text-right focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
+              ))}
+            </tr>
+
+            {/* その他手当 */}
+            <tr>
+              <td className="px-3 py-2 border border-gray-200 font-medium">
+                その他手当<span className="text-xs text-gray-400 ml-1">(円)</span>
+              </td>
+              {months.map((m) => (
+                <td key={m.key} className="px-2 py-1.5 border border-gray-200">
+                  <NumericInput
+                    value={m.data.otherAllowance}
+                    min={0}
+                    onChange={(v) => handleChange(m, "otherAllowance", v)}
+                    className={inputClass}
+                  />
+                </td>
+              ))}
+            </tr>
 
             {/* 読み取り専用行: 月額合計 */}
             <tr className="bg-blue-50 font-semibold">

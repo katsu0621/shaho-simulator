@@ -1,5 +1,6 @@
 import { PREFECTURES } from "../data/prefectures";
 import type { OvertimeMode } from "../lib/calc";
+import NumericInput from "./NumericInput";
 
 interface BasicInfoProps {
   prefectureName: string;
@@ -60,12 +61,11 @@ export default function BasicInfo(props: BasicInfoProps) {
         {/* 月の所定労働時間 */}
         <label className="text-sm font-medium">月の所定労働時間</label>
         <div className="flex items-center gap-2">
-          <input
-            type="number"
+          <NumericInput
             value={scheduledHours}
             step={0.1}
             min={0}
-            onChange={(e) => setScheduledHours(Number(e.target.value))}
+            onChange={setScheduledHours}
             className="w-32 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
           <span className="text-sm text-gray-600">時間</span>
@@ -73,12 +73,11 @@ export default function BasicInfo(props: BasicInfoProps) {
 
         {/* 残業割増率 */}
         <label className="text-sm font-medium">残業割増率</label>
-        <input
-          type="number"
+        <NumericInput
           value={overtimeMultiplier}
           step={0.05}
           min={1}
-          onChange={(e) => setOvertimeMultiplier(Number(e.target.value))}
+          onChange={setOvertimeMultiplier}
           placeholder="通常1.25 / 深夜1.5 / 休日1.35"
           className="rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
@@ -113,11 +112,10 @@ export default function BasicInfo(props: BasicInfoProps) {
           <>
             <label className="text-sm font-medium">3月の基本給</label>
             <div className="flex items-center gap-2">
-              <input
-                type="number"
+              <NumericInput
                 value={marchBase}
                 min={0}
-                onChange={(e) => setMarchBase(Number(e.target.value))}
+                onChange={setMarchBase}
                 className="w-40 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <span className="text-sm text-gray-600">円</span>
@@ -125,12 +123,11 @@ export default function BasicInfo(props: BasicInfoProps) {
 
             <label className="text-sm font-medium">3月の残業時間</label>
             <div className="flex items-center gap-2">
-              <input
-                type="number"
+              <NumericInput
                 value={marchOvertimeHours}
                 step={0.25}
                 min={0}
-                onChange={(e) => setMarchOvertimeHours(Number(e.target.value))}
+                onChange={setMarchOvertimeHours}
                 className="w-32 rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <span className="text-sm text-gray-600">時間</span>
