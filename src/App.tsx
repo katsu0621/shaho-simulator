@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { simulate } from "./lib/calc";
 import type { MonthInput, OvertimeMode, MarchOvertime } from "./lib/calc";
 import BasicInfo from "./components/BasicInfo";
 import MonthlyInput from "./components/MonthlyInput";
 import ResultPanel from "./components/ResultPanel";
+
+const STORAGE_KEY = "shaho-simulator-data";
 
 const defaultMonth: MonthInput = {
   baseSalary: 250000,
@@ -24,31 +26,78 @@ const defaultMarchOvertime: MarchOvertime = {
   over60HolidayHours: 0,
 };
 
+interface SavedState {
+  prefectureName: string;
+  hasCareInsurance: boolean;
+  scheduledHours: number;
+  overtimeMultiplier: number;
+  overtimeMode: OvertimeMode;
+  marchBase: number;
+  marchOvertime: MarchOvertime;
+  april: MonthInput;
+  may: MonthInput;
+  june: MonthInput;
+}
+
+const defaultState: SavedState = {
+  prefectureName: "東京",
+  hasCareInsurance: false,
+  scheduledHours: 160,
+  overtimeMultiplier: 1.25,
+  overtimeMode: "働いた月の単価",
+  marchBase: 250000,
+  marchOvertime: { ...defaultMarchOvertime },
+  april: { ...defaultMonth },
+  may: { ...defaultMonth },
+  june: { ...defaultMonth },
+};
+
+function loadState(): SavedState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState;
+    const parsed = JSON.parse(raw);
+    // デフォルト値とマージして、新しいフィールドが追加されても壊れないようにする
+    return {
+      ...defaultState,
+      ...parsed,
+      marchOvertime: { ...defaultMarchOvertime, ...parsed.marchOvertime },
+      april: { ...defaultMonth, ...parsed.april },
+      may: { ...defaultMonth, ...parsed.may },
+      june: { ...defaultMonth, ...parsed.june },
+    };
+  } catch {
+    return defaultState;
+  }
+}
+
 export default function App() {
-  const [prefectureName, setPrefectureName] = useState("東京");
-  const [hasCareInsurance, setHasCareInsurance] = useState(false);
-  const [scheduledHours, setScheduledHours] = useState(160);
-  const [overtimeMultiplier, setOvertimeMultiplier] = useState(1.25);
-  const [overtimeMode, setOvertimeMode] = useState<OvertimeMode>("働いた月の単価");
-  const [marchBase, setMarchBase] = useState(250000);
-  const [marchOvertime, setMarchOvertime] = useState<MarchOvertime>({ ...defaultMarchOvertime });
-  const [april, setApril] = useState<MonthInput>({ ...defaultMonth });
-  const [may, setMay] = useState<MonthInput>({ ...defaultMonth });
-  const [june, setJune] = useState<MonthInput>({ ...defaultMonth });
+  const initial = loadState();
+  const [prefectureName, setPrefectureName] = useState(initial.prefectureName);
+  const [hasCareInsurance, setHasCareInsurance] = useState(initial.hasCareInsurance);
+  const [scheduledHours, setScheduledHours] = useState(initial.scheduledHours);
+  const [overtimeMultiplier, setOvertimeMultiplier] = useState(initial.overtimeMultiplier);
+  const [overtimeMode, setOvertimeMode] = useState<OvertimeMode>(initial.overtimeMode);
+  const [marchBase, setMarchBase] = useState(initial.marchBase);
+  const [marchOvertime, setMarchOvertime] = useState<MarchOvertime>(initial.marchOvertime);
+  const [april, setApril] = useState<MonthInput>(initial.april);
+  const [may, setMay] = useState<MonthInput>(initial.may);
+  const [june, setJune] = useState<MonthInput>(initial.june);
+
+  // 入力値が変わるたびにlocalStorageに保存
+  useEffect(() => {
+    const state: SavedState = {
+      prefectureName, hasCareInsurance, scheduledHours, overtimeMultiplier,
+      overtimeMode, marchBase, marchOvertime, april, may, june,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [prefectureName, hasCareInsurance, scheduledHours, overtimeMultiplier, overtimeMode, marchBase, marchOvertime, april, may, june]);
 
   const result = useMemo(
     () =>
       simulate({
-        prefectureName,
-        hasCareInsurance,
-        scheduledHours,
-        overtimeMultiplier,
-        overtimeMode,
-        marchBase,
-        marchOvertime,
-        april,
-        may,
-        june,
+        prefectureName, hasCareInsurance, scheduledHours, overtimeMultiplier,
+        overtimeMode, marchBase, marchOvertime, april, may, june,
       }),
     [prefectureName, hasCareInsurance, scheduledHours, overtimeMultiplier, overtimeMode, marchBase, marchOvertime, april, may, june]
   );
@@ -57,6 +106,20 @@ export default function App() {
     setMay((prev) => ({ ...prev, baseSalary: april.baseSalary }));
     setJune((prev) => ({ ...prev, baseSalary: april.baseSalary }));
   };
+
+  const resetAll = useCallback(() => {
+    setPrefectureName(defaultState.prefectureName);
+    setHasCareInsurance(defaultState.hasCareInsurance);
+    setScheduledHours(defaultState.scheduledHours);
+    setOvertimeMultiplier(defaultState.overtimeMultiplier);
+    setOvertimeMode(defaultState.overtimeMode);
+    setMarchBase(defaultState.marchBase);
+    setMarchOvertime({ ...defaultMarchOvertime });
+    setApril({ ...defaultMonth });
+    setMay({ ...defaultMonth });
+    setJune({ ...defaultMonth });
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
@@ -98,6 +161,16 @@ export default function App() {
       />
 
       <ResultPanel result={result} hasCareInsurance={hasCareInsurance} />
+
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={resetAll}
+          className="text-xs text-gray-400 hover:text-red-500 underline"
+        >
+          入力をリセット
+        </button>
+      </div>
 
       <footer className="text-center text-xs text-gray-400 border-t pt-4 space-y-1">
         <p>※本ツールは概算です。実際の保険料は加入する健保組合の決定によります</p>
