@@ -109,7 +109,7 @@ export default function MonthlyInput(props: MonthlyInputProps) {
                   className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
                 >
                   <span className={`transition-transform ${detailOpen ? "rotate-90" : ""}`}>▶</span>
-                  残業詳細入力（休日出勤・深夜残業）
+                  残業詳細入力（休日出勤・深夜残業・60H超）
                 </button>
               </td>
             </tr>
@@ -153,6 +153,50 @@ export default function MonthlyInput(props: MonthlyInputProps) {
                           min={0}
                           disabled={disabled}
                           onChange={(v) => m.set({ ...m.data, lateNightHours: v })}
+                          className={disabled ? disabledClass : inputClass}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* 詳細入力: 60H超残業 */}
+                <tr className="bg-red-50/50">
+                  <td className="px-3 py-2 border border-gray-200 font-medium text-red-700">
+                    60H超<span className="text-xs text-gray-400 ml-1">(時間・×1.5)</span>
+                  </td>
+                  {months.map((m) => {
+                    const disabled = isWorkedMonth && m.key === "june";
+                    return (
+                      <td key={m.key} className="px-2 py-1.5 border border-gray-200">
+                        <NumericInput
+                          value={m.data.over60Hours}
+                          step={0.25}
+                          min={0}
+                          disabled={disabled}
+                          onChange={(v) => m.set({ ...m.data, over60Hours: v })}
+                          className={disabled ? disabledClass : inputClass}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* 詳細入力: 60H超休日 */}
+                <tr className="bg-red-50/50">
+                  <td className="px-3 py-2 border border-gray-200 font-medium text-red-700">
+                    休日60H超<span className="text-xs text-gray-400 ml-1">(時間・×1.6)</span>
+                  </td>
+                  {months.map((m) => {
+                    const disabled = isWorkedMonth && m.key === "june";
+                    return (
+                      <td key={m.key} className="px-2 py-1.5 border border-gray-200">
+                        <NumericInput
+                          value={m.data.over60HolidayHours}
+                          step={0.25}
+                          min={0}
+                          disabled={disabled}
+                          onChange={(v) => m.set({ ...m.data, over60HolidayHours: v })}
                           className={disabled ? disabledClass : inputClass}
                         />
                       </td>

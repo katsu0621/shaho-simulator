@@ -3,25 +3,28 @@ import { COMMON_RATES, PREFECTURES, type PrefectureRate } from "../data/prefectu
 
 export type OvertimeMode = "支払月の単価" | "働いた月の単価";
 
-export interface MonthInput {
-  baseSalary: number;       // 基本給（円）
+export interface OvertimeDetail {
   overtimeHours: number;    // 通常残業時間（時間）
   holidayHours: number;     // 休日出勤時間（時間）
   lateNightHours: number;   // 深夜残業時間（時間）
+  over60Hours: number;      // 60H超残業時間（時間）
+  over60HolidayHours: number; // 60H超休日時間（時間）
+}
+
+export interface MonthInput extends OvertimeDetail {
+  baseSalary: number;       // 基本給（円）
   commute: number;          // 通勤手当（円・課税非課税問わず社保算定対象）
   otherAllowance: number;   // その他手当（円）
 }
 
 // 3月分の残業詳細（働いた月の単価モード用）
-export interface MarchOvertime {
-  overtimeHours: number;
-  holidayHours: number;
-  lateNightHours: number;
-}
+export type MarchOvertime = OvertimeDetail;
 
-// 休日出勤・深夜残業の割増率（固定）
+// 各種割増率（固定）
 export const HOLIDAY_MULTIPLIER = 1.35;
 export const LATE_NIGHT_MULTIPLIER = 1.5;
+export const OVER60_MULTIPLIER = 1.5;           // 月60H超の時間外労働（50%割増）
+export const OVER60_HOLIDAY_MULTIPLIER = 1.6;    // 月60H超の休日労働（35%+25%割増）
 
 export interface SimulationInput {
   prefectureName: string;
@@ -132,11 +135,13 @@ export function simulate(input: SimulationInput): SimulationResult {
   const maySrc   = isWorkedMonth ? april         : may;
   const juneSrc  = isWorkedMonth ? may           : june;
 
-  // 各月の残業代 = 通常残業 + 休日出勤 + 深夜残業
-  const calcMonthOT = (base: number, src: { overtimeHours: number; holidayHours: number; lateNightHours: number }) => {
+  // 各月の残業代 = 通常残業 + 休日出勤 + 深夜残業 + 60H超 + 60H超休日
+  const calcMonthOT = (base: number, src: OvertimeDetail) => {
     return calcOvertimePay(base, scheduledHours, src.overtimeHours, overtimeMultiplier)
       + calcOvertimePay(base, scheduledHours, src.holidayHours, HOLIDAY_MULTIPLIER)
-      + calcOvertimePay(base, scheduledHours, src.lateNightHours, LATE_NIGHT_MULTIPLIER);
+      + calcOvertimePay(base, scheduledHours, src.lateNightHours, LATE_NIGHT_MULTIPLIER)
+      + calcOvertimePay(base, scheduledHours, src.over60Hours, OVER60_MULTIPLIER)
+      + calcOvertimePay(base, scheduledHours, src.over60HolidayHours, OVER60_HOLIDAY_MULTIPLIER);
   };
 
   const aprOT = calcMonthOT(aprilBase, aprilSrc);

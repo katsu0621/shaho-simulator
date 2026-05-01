@@ -170,6 +170,28 @@ export default function BasicInfo(props: BasicInfoProps) {
                     />
                     <span className="text-xs text-gray-500">時間</span>
                   </div>
+                  <label className="text-xs text-gray-600">60H超（×1.5）</label>
+                  <div className="flex items-center gap-2">
+                    <NumericInput
+                      value={marchOvertime.over60Hours}
+                      step={0.25}
+                      min={0}
+                      onChange={(v) => setMarchOvertime({ ...marchOvertime, over60Hours: v })}
+                      className="w-24 rounded border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                    <span className="text-xs text-gray-500">時間</span>
+                  </div>
+                  <label className="text-xs text-gray-600">休日60H超（×1.6）</label>
+                  <div className="flex items-center gap-2">
+                    <NumericInput
+                      value={marchOvertime.over60HolidayHours}
+                      step={0.25}
+                      min={0}
+                      onChange={(v) => setMarchOvertime({ ...marchOvertime, over60HolidayHours: v })}
+                      className="w-24 rounded border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                    <span className="text-xs text-gray-500">時間</span>
+                  </div>
                 </div>
               )}
             </div>

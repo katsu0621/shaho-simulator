@@ -10,6 +10,8 @@ const defaultMonth: MonthInput = {
   overtimeHours: 0,
   holidayHours: 0,
   lateNightHours: 0,
+  over60Hours: 0,
+  over60HolidayHours: 0,
   commute: 0,
   otherAllowance: 0,
 };
@@ -18,6 +20,8 @@ const defaultMarchOvertime: MarchOvertime = {
   overtimeHours: 0,
   holidayHours: 0,
   lateNightHours: 0,
+  over60Hours: 0,
+  over60HolidayHours: 0,
 };
 
 export default function App() {
